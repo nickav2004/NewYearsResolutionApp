@@ -3,24 +3,21 @@ from rest_framework.response import Response
 from rest_framework import status
 from .models import Task
 from .serializers import TaskSerializer
-from datetime import datetime
+from django.utils import timezone
 
-past_time = datetime.now()
-
-def update_new_day():
-    global past_time
-    current_time = datetime.now()
-    
-    if(current_time.day > past_time.day):
-        Task.objects.update(completed=False)
-        past_time = datetime.now()
     
 
 class GetTasks(APIView):
     def get(self, request, format=None):
-        update_new_day()
+        today = timezone.now().day
+        print(today)
 
         tasks = Task.objects.all()
+        for task in tasks:
+            if task.last_reset.day < today:
+                task.completed = False
+                task.last_reset = timezone.now()
+                
         serializer = TaskSerializer(tasks, many=True)
         return Response(serializer.data)
 
